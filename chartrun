@@ -1,0 +1,54 @@
+chartrun=function(){
+    require(ggplot2)
+    countynames=c("Adams","Allen","Ashland","Ashtabula","Athens","Auglaize","Belmont","Brown","Butler",
+                  "Carroll","Champaign","Clark","Clermont","Clinton","Columbiana","Coshocton","Crawford","Cuyahoga","Darke",
+                  "Defiance","Delaware","Erie","Fairfield","Fayette","Franklin","Fulton","Gallia","Geauga","Greene",
+                  "Guernsey","Hamilton","Hancock","Hardin","Harrison","Henry","Highland","Hocking","Holmes",
+                  "Huron","Jackson","Jefferson","Knox","Lake","Lawrence","Licking","Logan","Lorain","Lucas",
+                  "Madison","Mahoning","Marion","Medina","Meigs","Mercer","Miami","Monroe","Montgomery","Morgan",
+                  "Morrow","Muskingum","Noble","Ottawa","Paulding","Perry","Pickaway","Pike","Portage","Preble",
+                  "Putnam","Richland","Ross","Sandusky","Scioto","Seneca","Shelby","Stark","Summit","Trumbull","Tuscarawas",
+                  "Union","Van Wert","Vinton","Warren","Washington","Wayne","Williams","Wood","Wyandot"
+    )
+    county=readline("What county would you like to look at?(spell it out and capitalize) ")
+    type=readline("What type of data would you like to map?
+                  1: Death
+                  2: Birth
+                  3: Cancer
+                  4: Infectious Disease
+                  ")
+    type=as.numeric(type)
+    type=ifelse(type==1,"Death",ifelse(type==2,"Birth",ifelse(type==3,"Cancer","Disease")))
+    x=read.csv(paste(type,"counties.csv",sep=""))
+    x=x[order(x[,1],x[,4],x[,6],decreasing=TRUE),]
+    x[,1]=as.factor(x[,1])
+    yearsplit=split(x,x[,1])
+    for(i in 1:length(levels(x[,1]))){
+        yeartable=as.data.frame(yearsplit[i])
+        year=as.character(yeartable[1,1])
+        causesplit=split(yeartable,yeartable[,4])
+        for(i in 1:length(levels(yeartable[,4]))){
+            causetable=as.data.frame(causesplit[i])
+            if(nrow(causetable)>0){
+                cause=as.character(causetable[1,4])
+                cause=gsub("/","",cause)
+                cause=gsub("<","less than",cause)
+                z=causetable[,2]==county
+                causetable=cbind(causetable,z)
+                title=paste(year,type,cause,sep=" ")
+                file=paste(county,"/plots/",year,type,cause,".png",sep="")
+                if(type=="Birth"){
+                    p=ggplot(causetable,aes(x=reorder(causetable[,2],causetable[,6]),y=causetable[,6],fill=factor(z)))+
+                        geom_bar(stat='identity')+coord_flip()+labs(y='Birth Rate',x='County')+
+                        theme(legend.position="none",title=element_text(size=4),axis.text.y=element_text(size=2))+scale_fill_brewer(palette="Set1")+labs(title=title)
+                    ggsave(filename=file,plot=p,width=96,height=60,units="mm")
+                }else{
+                    p=ggplot(causetable,aes(x=reorder(causetable[,2],causetable[,6]),y=causetable[,6],fill=factor(z)))+
+                        geom_bar(stat='identity')+coord_flip()+labs(y='Age Adjusted Rate',x='County')+
+                        theme(legend.position="none",title=element_text(size=4),axis.text.y=element_text(size=2))+scale_fill_brewer(palette="Set3")+labs(title=title)
+                    ggsave(filename=file,plot=p,width=96,height=60,units="mm")
+                }
+            }
+        }
+    }
+}
