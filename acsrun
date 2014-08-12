@@ -1,0 +1,51 @@
+acsrun=function(){
+    require(acs)
+    countyfips=read.csv("countyfips.csv")
+    censustracts=read.csv("countycensustracts.csv",check.names=FALSE)
+    countyno=readline("What county would you like to collect data for? ")
+    countyno=as.numeric(unlist(strsplit(countyno,",")))
+    countyname=countyfips[countyno==countyfips$code|countyno==countyfips$oldcode,]
+    countyname=as.character(countyname[,3])
+    censustracts=censustracts[,names(censustracts)==countyname]
+    headers=as.numeric(censustracts[1,])
+    census=NULL
+    age=acs.fetch(geo=geo.make(state="OH",county=countyno,tract="*"),table.number="B01001")
+    age=data.frame(estimate(age))
+    age=t(age[,2:ncol(age)])
+    age=as.data.frame(age)
+    Population=c(rep("Male",24),rep("Female",24))
+    Cause=c("Total Male","<5","5-9","10-14","15-17","18-19","20","21","22-24","25-29","30-34","35-39","40-44",
+           "45-49","50-54","55-59","60-61","62-64","65-66","67-69","70-74","75-79","80-84","85+","Total Female",
+           "<5","5-9","10-14","15-17","18-19","20","21","22-24","25-29","30-34","35-39","40-44",
+           "45-49","50-54","55-59","60-61","62-64","65-66","67-69","70-74","75-79","80-84","85+")
+    age=cbind(Cause,age)
+    age=cbind(Population,age)
+    race=acs.fetch(geo=geo.make(state="OH",county=countyno,tract="*"),table.number="B02001")
+    race=data.frame(estimate(race))
+    race=t(race[,2:ncol(race)])
+    race=as.data.frame(race)
+    Population=rep("Total",9)
+    Cause=c("White alone","Black alone","American Indian and Alaska Native Alone","Asian alone","Native Hawaiian and Other Pacific 
+            Islander alone","Some other race alone","Two or more races","Two races including Some other race","Two races excluding
+            Some other race, and three or more races")
+    race=cbind(Cause,race)
+    race=cbind(Population,race)
+    ethnicity=acs.fetch(geo=geo.make(state="OH",county=countyno,tract="*"),table.number="B03001")
+    ethnicity=data.frame(estimate(ethnicity))
+    ethnicity=t(ethnicity[,2:ncol(ethnicity)])
+    ethnicity=as.data.frame(ethnicity)
+    Population=c("Not Hispanic or Latino",rep("Hispanic or Latino",24),rep("Other Hispanic or Latino",5))
+    Cause=c("Not Hispanic or Latino","Hispanic or Latino","Mexican","Puerto Rican","Cuban","Dominican","Central American",
+            "Costa Rican","Guatemalan","Honduran","Nicaraguan","Panamanian","Salvadoran","Other Central American",
+            "South American","Argentinean","Bolivian","Chilean","Colombian","Ecuadorian","Paraguayan","Peruvian",
+            "Uruguayan","Venezuelan","Other South American","Other Hispanic or Latino","Spaniard","Spanish","Spanish American",
+            "All other Hispanic or Latino")
+    ethnicity=cbind(Cause,ethnicity)
+    ethnicity=cbind(Population,ethnicity)
+    census=rbind(age,race,ethnicity)
+    Year=2012
+    Area=rep(countyname,nrow(census))
+    census=cbind(Area,census)
+    census=cbind(Year,census)
+    write.csv(census,file=paste(countyname,"/",countyname,"Census.csv",sep=""))
+}
