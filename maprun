@@ -1,0 +1,93 @@
+maprun=function(){
+    require(maps)
+    require(maptools)
+    require(RColorBrewer)
+    require(classInt)
+    county=readline("What county would you like to look at?(spell it out and capitalize) ")
+    year=readline("What year would you like to look at? ")
+    year=as.numeric(year)
+    type=readline("What type of data would you like to map?
+                  1: Death
+                  2: Birth
+                  3: Cancer
+                  4: Infectious Disease
+                  ")
+    type=as.numeric(type)
+    type=ifelse(type==1,"Death",ifelse(type==2,"Birth",ifelse(type==3,"Cancer","Disease")))
+    x=read.csv(paste("",county,"/",county,type,year,".csv","",sep=""))
+    tablenames=names(x)
+    countysplit=split(x,x[,2])
+    for(i in 1:length(levels(x[,2]))){
+        countytable=as.data.frame(countysplit[i])
+        countyname=as.character(countytable[1,2])
+        causesplit=split(countytable,countytable[,4])
+        for(i in 1:length(levels(countytable[,4]))){
+            totaltable=as.data.frame(causesplit[i])
+            totaltable[totaltable=="Inf"]=0
+            colnames(totaltable)=tablenames
+            cause=as.character(totaltable[1,4])
+            countyshape=paste(countyname,"/",countyname,"CensusTracts.shp",sep="")
+            shapefile=readShapeSpatial(countyshape)
+            tractmatch=data.frame(Population=as.character(shapefile$NAME10))
+            joined=merge(tractmatch,totaltable,by=c("Population"))
+            if(nrow(joined)>0){
+                joined=merge(joined,tractmatch,by=c("Population"),all=TRUE)
+                joined$Population=as.numeric(as.character(joined$Population))
+                joined=joined[order(joined$Population),]
+                shapefile$NAME10=as.numeric(as.character(shapefile$NAME10))
+                shapefile=shapefile[order(shapefile$NAME10),]
+                if(type=="Death"){
+                    newat=joined$AgeAdjustedRate
+                    newatrange=range(newat,na.rm=T)
+                    if(newatrange[1]==newatrange[2]){
+                        newatrange[2]=newatrange[2]+5
+                    }
+                    shapefile$newat=newat
+                    colors=brewer.pal(5,"Reds")
+                    brks=seq(newatrange[1],newatrange[2],length=5)
+                    png(paste(countyname,"/","maps/",year,type,cause,".png",sep=""),width=1000,height=700)
+                    plot(shapefile,col=colors[findInterval(shapefile$newat,brks,all.inside=TRUE)],axes=F)
+                    box()
+                    title(paste(cause,"\n","age-adjusted",type,"rate per 100,000 people,",year,sep=" "),cex=0.5)
+                    legend(x="bottomleft",legend=leglabs(brks),fill=colors,bty="n",cex=1)
+                    dev.off()
+                }
+                if(type=="Birth"){
+                    joined=joined[!duplicated(joined$Population),]
+                    newat=joined[,5]
+                    newatrange=range(newat,na.rm=T)
+                    if(newatrange[1]==newatrange[2]){
+                        newatrange[2]=newatrange[2]+5
+                    }
+                    shapefile$newat=newat
+                    colors=brewer.pal(5,"Blues")
+                    brks=seq(newatrange[1],newatrange[2],length=5)
+                    png(paste(countyname,"/","maps/",year,type,cause,".png",sep=""),width=1000,height=700)
+                    plot(shapefile,col=colors[findInterval(shapefile$newat,brks,all.inside=TRUE)],axes=F)
+                    box()
+                    title(paste(cause,"\n","age-adjusted",type,"rate per 100,000 people,",year,sep=" "),cex=0.5)
+                    legend(x="bottomleft",legend=leglabs(brks),fill=colors,bty="n",cex=1)
+                    dev.off()
+                }
+                if(type=="Disease"){
+                    joined=joined[!duplicated(joined$Population),]
+                    newat=joined[,5]
+                    newatrange=range(newat,na.rm=T)
+                    if(newatrange[1]==newatrange[2]){
+                        newatrange[2]=newatrange[2]+5
+                    }
+                    shapefile$newat=newat
+                    colors=brewer.pal(5,"Greens")
+                    brks=seq(newatrange[1],newatrange[2],length=5)
+                    png(paste(countyname,"/","maps/",year,type,cause,".png",sep=""),width=1000,height=700)
+                    plot(shapefile,col=colors[findInterval(shapefile$newat,brks,all.inside=TRUE)],axes=F)
+                    box()
+                    title(paste(cause,"\n","age-adjusted","infectious disease","rate per 100,000 people,",year,sep=" "),cex=0.5)
+                    legend(x="bottomleft",legend=leglabs(brks),fill=colors,bty="n",cex=1)
+                    dev.off()
+                }
+            }
+            
+        }
+    }
+}
