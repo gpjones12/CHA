@@ -1,0 +1,59 @@
+yearsrun=function(){
+    require(ggplot2)
+    county=readline("What county would you like to look at?(spell it out and capitalize) ")
+    type=readline("What type of data would you like to look at?
+                  1: Death
+                  2: Birth
+                  3: Cancer
+                  4: Infectious Disease
+                  ")
+    type=as.numeric(type)
+    type=ifelse(type==1,"Death",ifelse(type==2,"Birth",ifelse(type==3,"Cancer","Disease")))
+    x=read.csv(paste("",county,"/",county,type,".csv","",sep=""))
+    tablenames=names(x)
+    populationsplit=split(x,x[,3])
+    for(i in 1:length(levels(x[,3]))){
+        countytable=as.data.frame(populationsplit[i])
+        popname=as.character(countytable[1,3])
+        countytable[,4]=as.factor(as.character(countytable[,4]))
+        causesplit=split(countytable,countytable[,4])
+        for(i in 1:length(levels(countytable[,4]))){
+            totaltable=as.data.frame(causesplit[i])
+            colnames(totaltable)=tablenames
+            cause=as.character(totaltable[1,4])
+            cause=gsub("<","less than",cause)
+            cause=gsub("/","",cause)
+            if(nrow(totaltable)>1){
+                if(type=="Death"){
+                    file=paste(county,"/years/",type,popname,cause,".png",sep="")
+                    title=paste(popname,cause,"by year")
+                    p=qplot(totaltable[,1],totaltable[,6],data=totaltable,geom="line",color=totaltable[,3])+
+                        labs(y='Age Adjusted Rate',x='Year')+theme(legend.position="none",title=element_text(size=6))+labs(title=title)+scale_color_manual(values="#66CC99")
+                    ggsave(filename=file,plot=p,width=96,height=60,units="mm")
+                }
+                if(type=="Birth"){
+                    file=paste(county,"/years/",type,popname,cause,".png",sep="")
+                    title=paste(popname,cause,"by year")
+                    p=qplot(totaltable[,1],totaltable[,6],data=totaltable,geom="line",color=totaltable[,3])+
+                        labs(y='Birth Rate',x='Year')+theme(legend.position="none", title=element_text(size=6))+labs(title=title)+scale_color_manual(values="#9999CC")
+                    ggsave(filename=file,plot=p,width=96,height=60,units="mm")
+                }
+                if(type=="Disease"){
+                    file=paste(county,"/years/",type,popname,cause,".png",sep="")
+                    title=paste(popname,cause,"by year")
+                    p=qplot(totaltable[,1],totaltable[,6],data=totaltable,geom="line",color=totaltable[,3])+
+                        labs(y='Age Adjusted Rate',x='Year')+theme(legend.position="none",title=element_text(size=6))+labs(title=title)+scale_color_manual(values="#CC6666")
+                    ggsave(filename=file,plot=p,width=96,height=60,units="mm")
+                }
+                if(type=="Cancer"){
+                    file=paste(county,"/years/",type,popname,cause,".png",sep="")
+                    title=paste(popname,cause,"by year")
+                    p=qplot(totaltable[,1],totaltable[,6],data=totaltable,geom="line",color=totaltable[,3])+
+                        labs(y='Age Adjusted Rate',x='Year')+theme(legend.position="none",title=element_text(size=6))+labs(title=title)+scale_color_manual(values="#990099")
+                    ggsave(filename=file,plot=p,width=96,height=60,units="mm")
+                }
+            }
+            
+        }
+    }
+}
